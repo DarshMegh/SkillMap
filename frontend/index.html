@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>SkillMap AI — Your Personal Learning Roadmap</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --surface2: #1a1a24;
+            --border: #2a2a3a;
+            --accent: #7fff6e;
+            --accent2: #6e9fff;
+            --accent3: #ff6eb4;
+            --text: #e8e8f0;
+            --muted: #6b6b80;
+            --phase-colors: #7fff6e, #6e9fff, #ff6eb4, #ffd96e, #c96eff;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                    linear-gradient(rgba(127,255,110,0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(127,255,110,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+        /* ── Header ── */
+        header {
+            padding: 56px 0 40px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 56px;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: clamp(2.2rem, 6vw, 3.6rem);
+            letter-spacing: -0.03em;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-dot {
+            width: 14px; height: 14px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.85); }
+        }
+
+        .tagline {
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-size: 1rem;
+            color: var(--muted);
+            margin-top: 10px;
+            letter-spacing: 0.01em;
+        }
+
+        /* ── Form ── */
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.68rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .form-group { margin-bottom: 24px; }
+
+        input[type="text"], select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.95rem;
+            padding: 14px 18px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(127,255,110,0.1);
+        }
+
+        input::placeholder { color: var(--muted); }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        select option { background: #1a1a24; }
+
+        .btn {
+            width: 100%;
+            padding: 16px 32px;
+            background: var(--accent);
+            color: #0a0a0f;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(127,255,110,0.3);
+        }
+
+        .btn:active { transform: translateY(0); }
+
+        .btn:disabled {
+            background: var(--surface2);
+            color: var(--muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ── Loading ── */
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loader-ring {
+            width: 48px; height: 48px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loader-text {
+            font-size: 0.78rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+        }
+
+        .loader-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 16px;
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+
+        .loader-step { opacity: 0; animation: fadeStep 0.4s ease forwards; }
+        .loader-step:nth-child(1) { animation-delay: 0.5s; }
+        .loader-step:nth-child(2) { animation-delay: 1.5s; }
+        .loader-step:nth-child(3) { animation-delay: 2.8s; }
+        @keyframes fadeStep { to { opacity: 1; } }
+
+        /* ── Output ── */
+        #output { display: none; animation: slideUp 0.5s ease; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .output-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .output-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent);
+            letter-spacing: 0.05em;
+        }
+
+        .btn-reset {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .btn-reset:hover { border-color: var(--accent3); color: var(--accent3); }
+
+        /* ── Markdown Render ── */
+        .roadmap-content h2 {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 1.3rem;
+            margin: 40px 0 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .roadmap-content h2:first-child { margin-top: 0; }
+
+        .roadmap-content h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--accent2);
+            margin: 28px 0 10px;
+        }
+
+        .roadmap-content p {
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: #c8c8d8;
+            margin-bottom: 12px;
+        }
+
+        .roadmap-content ul {
+            list-style: none;
+            margin: 8px 0 16px 0;
+        }
+
+        .roadmap-content ul li {
+            font-size: 0.88rem;
+            line-height: 1.7;
+            color: #c8c8d8;
+            padding: 4px 0 4px 20px;
+            position: relative;
+        }
+
+        .roadmap-content ul li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-size: 0.8rem;
+        }
+
+        .roadmap-content strong {
+            color: var(--text);
+            font-weight: 400;
+            font-family: 'Syne', sans-serif;
+        }
+
+        .roadmap-content a {
+            color: var(--accent2);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(110,159,255,0.4);
+            transition: border-color 0.2s;
+        }
+
+        .roadmap-content a:hover { border-color: var(--accent2); }
+
+        /* Phase blocks */
+        .phase-block {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left-width: 3px;
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 16px 0;
+        }
+
+        /* Progress tracker */
+        .tracker {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            margin-top: 40px;
+        }
+
+        .tracker-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        .progress-bar-wrap {
+            background: var(--bg);
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.6s ease;
+        }
+
+        .progress-label {
+            font-size: 0.72rem;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .phase-checks {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .phase-check {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .phase-check:hover { background: var(--surface2); border-color: var(--border); }
+
+        .phase-check input[type="checkbox"] { display: none; }
+
+        .check-box {
+            width: 18px; height: 18px;
+            border: 1.5px solid var(--border);
+            border-radius: 4px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, border-color 0.2s;
+            font-size: 11px;
+        }
+
+        .phase-check.done .check-box {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #0a0a0f;
+        }
+
+        .phase-check.done .check-label { text-decoration: line-through; color: var(--muted); }
+
+        .check-label { font-size: 0.82rem; color: var(--text); transition: color 0.2s; }
+
+        /* Error */
+        .error-box {
+            background: rgba(255,80,80,0.08);
+            border: 1px solid rgba(255,80,80,0.3);
+            border-radius: 8px;
+            padding: 20px 24px;
+            color: #ff8080;
+            font-size: 0.85rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            margin-top: 80px;
+            font-size: 0.72rem;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+        }
+
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .form-card { padding: 24px 20px; }
+            header { padding: 36px 0 28px; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <header>
+        <div class="logo">
+            <div class="logo-dot"></div>
+            SkillMap AI
+        </div>
+        <p class="tagline">Type your goal. Get a roadmap built for you, not everyone.</p>
+    </header>
+
+    <!-- Form -->
+    <div class="form-card" id="form-section">
+        <div class="form-group">
+            <label class="form-label" for="goal">What do you want to learn or achieve?</label>
+            <input type="text" id="goal" placeholder="e.g. Become a full-stack developer, Learn machine learning, Build iOS apps…" />
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="level">Your current level</label>
+                <select id="level">
+                    <option value="complete beginner">Complete Beginner</option>
+                    <option value="beginner">Beginner (some basics)</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="timeframe">Target timeframe</label>
+                <select id="timeframe">
+                    <option value="1 month">1 Month</option>
+                    <option value="3 months" selected>3 Months</option>
+                    <option value="6 months">6 Months</option>
+                    <option value="1 year">1 Year</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn" id="generateBtn" onclick="generateRoadmap()">Generate My Roadmap →</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading">
+        <div class="loader-ring"></div>
+        <div class="loader-text">BUILDING YOUR ROADMAP</div>
+        <div class="loader-steps">
+            <div class="loader-step">⟳ Analyzing your goal…</div>
+            <div class="loader-step">⟳ Structuring phases…</div>
+            <div class="loader-step">⟳ Curating resources…</div>
+        </div>
+    </div>
+
+    <!-- Output -->
+    <div id="output">
+        <div class="output-header">
+            <span class="output-title">// YOUR PERSONALIZED ROADMAP</span>
+            <button class="btn-reset" onclick="resetForm()">← New Goal</button>
+        </div>
+        <div class="roadmap-content" id="roadmapContent"></div>
+        <div class="tracker" id="tracker">
+            <div class="tracker-title">Progress Tracker</div>
+            <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="progress-label">
+                <span id="progressText">0% complete</span>
+                <span id="progressCount">0 / 0 phases</span>
+            </div>
+            <div class="phase-checks" id="phaseChecks"></div>
+        </div>
+    </div>
+
+</div>
+
+<footer>
+    SkillMap AI — Pure Java + Anthropic Claude &nbsp;|&nbsp; Built to stand out
+</footer>
+
+<script>
+    // ── Simple markdown-to-HTML renderer ──
+    function renderMarkdown(md) {
+        let html = md
+            // Headers
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+            // Bold
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            // Italic
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            // Links [text](url)
+            .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+            // Bullet lists
+            .replace(/^\s*[-•]\s+(.+)$/gm, '<li>$1</li>')
+            // Wrap consecutive <li> in <ul>
+            .replace(/(<li>.*<\/li>\n?)+/g, m => '<ul>' + m + '</ul>')
+            // Paragraphs (double newline)
+            .replace(/\n\n+/g, '\n</p><p>\n')
+            // Line breaks
+            .replace(/\n/g, '<br/>');
+
+        // Wrap in paragraphs, clean up around block elements
+        html = '<p>' + html + '</p>';
+        html = html.replace(/<p>\s*(<h[23]>)/g, '$1');
+        html = html.replace(/(<\/h[23]>)\s*<\/p>/g, '$1');
+        html = html.replace(/<p>\s*(<ul>)/g, '$1');
+        html = html.replace(/(<\/ul>)\s*<\/p>/g, '$1');
+        html = html.replace(/<p>\s*<\/p>/g, '');
+        html = html.replace(/<br\/>\s*<\/p>/g, '</p>');
+
+        return html;
+    }
+
+    // ── Extract phases from roadmap text for tracker ──
+    function extractPhases(text) {
+        const phases = [];
+        const regex = /###\s*Phase\s*\d+[:\s]+([^\n]+)/gi;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            phases.push(match[1].trim());
+        }
+        // Fallback: look for any h3
+        if (phases.length === 0) {
+            const h3 = /###\s+([^\n]+)/gi;
+            while ((match = h3.exec(text)) !== null) {
+                const t = match[1].trim();
+                if (!phases.includes(t)) phases.push(t);
+            }
+        }
+        return phases.slice(0, 8); // max 8
+    }
+
+    // ── Build progress tracker ──
+    let totalPhases = 0;
+    function buildTracker(phases) {
+        totalPhases = phases.length;
+        const container = document.getElementById('phaseChecks');
+        container.innerHTML = '';
+        document.getElementById('progressCount').textContent = `0 / ${phases.length} phases`;
+
+        const colors = ['#7fff6e','#6e9fff','#ff6eb4','#ffd96e','#c96eff','#6effd9','#ff9f6e','#e96eff'];
+
+        phases.forEach((phase, i) => {
+            const label = document.createElement('label');
+            label.className = 'phase-check';
+            label.innerHTML = `
+      <input type="checkbox" onchange="updateProgress()"/>
+      <div class="check-box" style="--c:${colors[i % colors.length]}">✓</div>
+      <span class="check-label">Phase ${i+1}: ${phase}</span>
+    `;
+            label.querySelector('.check-box').style.setProperty('--c', colors[i % colors.length]);
+            label.querySelector('input').addEventListener('change', function() {
+                label.classList.toggle('done', this.checked);
+                label.querySelector('.check-box').style.background = this.checked ? colors[i % colors.length] : '';
+                label.querySelector('.check-box').style.borderColor = this.checked ? colors[i % colors.length] : '';
+                updateProgress();
+            });
+            container.appendChild(label);
+        });
+    }
+
+    function updateProgress() {
+        const checks = document.querySelectorAll('#phaseChecks input[type="checkbox"]');
+        const done = Array.from(checks).filter(c => c.checked).length;
+        const pct = totalPhases ? Math.round((done / totalPhases) * 100) : 0;
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressText').textContent = pct + '% complete';
+        document.getElementById('progressCount').textContent = `${done} / ${totalPhases} phases`;
+    }
+
+    // ── Main generate function ──
+    async function generateRoadmap() {
+        const goal = document.getElementById('goal').value.trim();
+        if (!goal) {
+            document.getElementById('goal').focus();
+            document.getElementById('goal').style.borderColor = '#ff6eb4';
+            setTimeout(() => document.getElementById('goal').style.borderColor = '', 1500);
+            return;
+        }
+
+        const level = document.getElementById('level').value;
+        const timeframe = document.getElementById('timeframe').value;
+
+        // Show loading
+        document.getElementById('form-section').style.display = 'none';
+        document.getElementById('output').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('generateBtn').disabled = true;
+
+        try {
+            const res = await fetch('/api/roadmap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ goal, level, timeframe })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                throw new Error(data.error || 'Server error');
+            }
+
+            // Render
+            const content = document.getElementById('roadmapContent');
+            content.innerHTML = renderMarkdown(data.roadmap);
+
+            // Build tracker
+            const phases = extractPhases(data.roadmap);
+            if (phases.length > 0) {
+                buildTracker(phases);
+                document.getElementById('tracker').style.display = 'block';
+            } else {
+                document.getElementById('tracker').style.display = 'none';
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('output').style.display = 'block';
+
+        } catch (err) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('form-section').style.display = 'block';
+            document.getElementById('roadmapContent').innerHTML =
+                `<div class="error-box">⚠ ${err.message || 'Something went wrong. Check your API key and server.'}</div>`;
+            document.getElementById('output').style.display = 'block';
+            document.getElementById('generateBtn').disabled = false;
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('output').style.display = 'none';
+        document.getElementById('form-section').style.display = 'block';
+        document.getElementById('generateBtn').disabled = false;
+        document.getElementById('goal').value = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Enter key support
+    document.getElementById('goal').addEventListener('keydown', e => {
+        if (e.key === 'Enter') generateRoadmap();
+    });
+</script>
+</body>
+</html>
